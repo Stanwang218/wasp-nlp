@@ -199,7 +199,7 @@ class A1RNNModel(PreTrainedModel):
         logits = self.unembedding(rnn_out)
         loss = None
         if labels is not None:
-            loss = self.loss_func(logits.view(-1, self.config.vocab_size), labels.view(-1))
+            loss = self.loss_func(logits.reshape(-1, self.config.vocab_size), labels.reshape(-1))
 
         return CausalLMOutput(logits=logits, loss=loss)
 
@@ -265,7 +265,7 @@ class A1Trainer:
         print('Device:', device)
         self.model.to(device)
         
-        loss_func = torch.nn.CrossEntropyLoss(ignore_index=self.tokenizer.pad_token_id)
+        loss_func = torch.nn.CrossEntropyLoss(ignore_index=-100)
 
         # TODO: Relevant arguments: at least args.learning_rate, but you can optionally also consider
         # other Adam-related hyperparameters here.
@@ -303,7 +303,7 @@ class A1Trainer:
                 labels = labels[:, 1:]
                 labels[labels == self.tokenizer.pad_token_id] = -100
                 outputs = self.model(input_ids=input_ids, labels=labels)
-                loss = loss_func(outputs.logits.view(-1, self.model.config.vocab_size), labels.view(-1))
+                loss = loss_func(outputs.logits.reshape(-1, self.model.config.vocab_size), labels.reshape(-1))
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -318,7 +318,7 @@ class A1Trainer:
                 labels[labels == self.tokenizer.pad_token_id] = -100
                 with torch.no_grad():
                     outputs = self.model(input_ids=input_ids, labels=labels)
-                    loss = loss_func(outputs.logits.view(-1, self.model.config.vocab_size), labels.view(-1))
+                    loss = loss_func(outputs.logits.reshape(-1, self.model.config.vocab_size), labels.reshape(-1))
                     tmp_val_loss += loss.item()
             tmp_val_loss /= len(val_loader)
             val_loss_list.append(tmp_val_loss)
@@ -347,6 +347,8 @@ if __name__ == '__main__':
     os.chdir(os.path.dirname(__file__))
     dataset = load_dataset('text', data_files={'train': 'train.txt', 'val': 'val.txt'})
     dataset = dataset.filter(lambda x: x['text'].strip() != '') # filter out empty lines
+    # tokenizer = build_tokenizer('train.txt', max_voc_size=10000, model_max_length=128)
+    # tokenizer.save('tokenizer.pkl')
     tokenizer = A1Tokenizer.from_file('tokenizer.pkl')
     for sec in ['train', 'val']:
         dataset[sec] = Subset(dataset[sec], range(100))
