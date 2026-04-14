@@ -10,6 +10,9 @@ import os
 import pickle
 import nltk
 from transformers import BatchEncoding, PretrainedConfig, PreTrainedModel
+from transformers import TrainingArguments
+from datasets import load_dataset
+from torch.utils.data import Subset
 
 def lowercase_tokenizer(text):
     return [t.lower() for t in nltk.word_tokenize(text)]
@@ -279,7 +282,7 @@ class A1Trainer:
                 labels = labels[:, 1:]
                 labels[labels == self.tokenizer.pad_token_id] = -100
                 outputs = self.model(input_ids=input_ids, labels=labels)
-                loss = loss_func(outputs.logits.reshape(-1, self.model.config.vocab_size), labels.reshape(-1))
+                loss = loss_func(outputs.reshape(-1, self.model.config.vocab_size), labels.reshape(-1))
 
                 optimizer.zero_grad()
                 loss.backward()
@@ -294,7 +297,7 @@ class A1Trainer:
                 labels[labels == self.tokenizer.pad_token_id] = -100
                 with torch.no_grad():
                     outputs = self.model(input_ids=input_ids, labels=labels)
-                    loss = loss_func(outputs.logits.reshape(-1, self.model.config.vocab_size), labels.reshape(-1))
+                    loss = loss_func(outputs.reshape(-1, self.model.config.vocab_size), labels.reshape(-1))
                     tmp_val_loss += loss.item()
             tmp_val_loss /= len(val_loader)
             val_loss_list.append(tmp_val_loss)
@@ -455,10 +458,36 @@ if __name__ == '__main__':
         rope_theta=100000.0,
         rms_norm_eps=torch.finfo(torch.float32).eps
     )
+    dataset = load_dataset('text', data_files={'train': '/Users/code/note/wasp_course/assignment/a1_1/train.txt', 'val': '/Users/code/note/wasp_course/assignment/a1_1/val.txt'})
+    dataset = dataset.filter(lambda x: x['text'].strip() != '') # filter out empty lines
+    for sec in ['train', 'val']:
+        dataset[sec] = Subset(dataset[sec], range(100))
     test_sentence = ['This is a test.']
     test_tensor = torch.tensor(tokenizer(test_sentence, return_tensors='pt')['input_ids'])
     
     model = A2Transformer(config)
+
+    trainer = A1Trainer(
+        model=model,
+        args=TrainingArguments(
+            optim='adamw_torch',
+            eval_strategy='epoch',
+            use_cpu=True,
+            learning_rate=1e-3,
+            num_train_epochs=10,
+            per_device_train_batch_size=8,
+            per_device_eval_batch_size=256,
+            output_dir='trainer_output',
+        ),
+        train_dataset=dataset['train'],
+        eval_dataset=dataset['val'],
+        tokenizer=tokenizer
+    )
+    
+
+    trainer.train()
+    # print('Perplexity:', trainer.val())
+
     output = model(test_tensor)
     print(output.shape)
 
