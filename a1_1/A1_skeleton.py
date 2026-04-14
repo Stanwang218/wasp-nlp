@@ -14,6 +14,8 @@ from transformers import TrainingArguments
 from tqdm import tqdm
 from datasets import load_dataset
 from torch.utils.data import Subset
+from sklearn.decomposition import TruncatedSVD
+import matplotlib.pyplot as plt
 ###
 ### Part 1. Tokenization.
 ###
@@ -334,6 +336,27 @@ class A1Trainer:
         print(f'Saving to {args.output_dir}.')
         self.model.save_pretrained(args.output_dir)
 
+    def val(self):
+        total_loss = 0
+        loss_func = torch.nn.CrossEntropyLoss(ignore_index=-100)
+        val_loader = DataLoader(dataset=self.eval_dataset, batch_size=self.args.per_device_eval_batch_size, shuffle=False)
+        for batch in tqdm(val_loader):
+            input_ids = self.tokenizer(batch['text'], truncation=True, padding=True, return_tensors='pt')['input_ids'].to(self.select_device())
+            labels = input_ids.clone()
+            input_ids = input_ids[:, :-1]
+            labels = labels[:, 1:]
+            labels[labels == self.tokenizer.pad_token_id] = -100
+            with torch.no_grad():
+                input_ids = input_ids[:, :-1]
+                labels = labels[:, 1:]
+                outputs = self.model(input_ids=input_ids, labels=labels)
+                loss = loss_func(outputs.logits.reshape(-1, self.model.config.vocab_size), labels.reshape(-1))
+                total_loss += loss.item()
+        total_loss /= len(val_loader)
+        print('Validation loss:', total_loss)
+        perplexity = np.exp2(total_loss)
+        return perplexity
+
 
 """
 Test:
@@ -341,6 +364,17 @@ tokenizer = A1Tokenizer.from_file('tokenizer.pkl')
 test_texts = ['This is a test.', 'Another test.']
 print(tokenizer(test_texts, padding=True, return_tensors='pt'))
 """
+
+def plot_embeddings_pca(emb, inv_voc, words):
+    vectors = np.vstack([emb.weight[inv_voc[w]].cpu().detach().numpy() for w in words])
+    vectors -= vectors.mean(axis=0)
+    twodim = TruncatedSVD(n_components=2).fit_transform(vectors)
+    plt.figure(figsize=(5,5))
+    plt.scatter(twodim[:,0], twodim[:,1], edgecolors='k', c='r')
+    for word, (x,y) in zip(words, twodim):
+        plt.text(x+0.02, y, word)
+    plt.axis('off')
+    plt.savefig('embedding_pca.png')
 
     
 if __name__ == '__main__':
@@ -350,10 +384,12 @@ if __name__ == '__main__':
     # tokenizer = build_tokenizer('train.txt', max_voc_size=10000, model_max_length=128)
     # tokenizer.save('tokenizer.pkl')
     tokenizer = A1Tokenizer.from_file('tokenizer.pkl')
+    
     for sec in ['train', 'val']:
-        dataset[sec] = Subset(dataset[sec], range(100))
+        dataset[sec] = Subset(dataset[sec], range(1000))
 
     model = A1RNNModel(A1RNNModelConfig(vocab_size=len(tokenizer), embedding_size=128, hidden_size=256))
+    model = model.from_pretrained('/Users/wangzi/Downloads/trainer_output')
     trainer = A1Trainer(
         model=model,
         args=TrainingArguments(
@@ -363,18 +399,30 @@ if __name__ == '__main__':
             learning_rate=1e-3,
             num_train_epochs=10,
             per_device_train_batch_size=8,
-            per_device_eval_batch_size=8,
+            per_device_eval_batch_size=256,
             output_dir='trainer_output',
         ),
         train_dataset=dataset['train'],
         eval_dataset=dataset['val'],
         tokenizer=tokenizer
     )
+    
 
-    trainer.train()
+    # trainer.train()
+    # print('Perplexity:', trainer.val())
 
-    test_text = "This is"
-    test_input_ids = tokenizer(test_text, truncation=True, padding=True, return_tensors='pt')['input_ids'].to(trainer.select_device())
+    test_text = ["She lives in San"]
+    test_input_ids = tokenizer(test_text, truncation=True, padding=True, return_tensors='pt')['input_ids'].to('cpu')
+    print(test_input_ids.shape)
     with torch.no_grad():
-        output = model(input_ids=test_input_ids)
-    print(output.logits)
+        model.eval()
+        output = model(input_ids=test_input_ids[:, :-1])
+    print(output.logits.shape)
+    topk_idx = output.logits[0, -1].topk(10).indices
+    print([tokenizer.id_to_str[idx.item()] for idx in topk_idx])
+    
+
+
+    plot_embeddings_pca(model.embedding, tokenizer.str_to_id, ['sweden', 'denmark', 'europe', 'africa', 'london', 'stockholm', 'large', 'small', 'great', 'black', '3', '7', '10', 'seven', 'three', 'ten', '1984', '2005', '2010'])
+    # idx = output.logits.argmax(dim=-1)[0, -1].item()
+    # print(tokenizer.id_to_str[idx])
