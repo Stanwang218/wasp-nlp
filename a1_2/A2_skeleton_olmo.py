@@ -85,8 +85,8 @@ class A2Attention(nn.Module):
         self.qkv = nn.Linear(self.hidden_size, 3 * self.hidden_size, bias=False) # for W_q, W_k, W_v
         self.o_proj = nn.Linear(self.hidden_size, self.hidden_size, bias=False) # for W_o
         # TODO: set up normalizers here
-        self.rms_norm_q = A2RMSNorm(config, self.hidden_size // self.num_attention_heads)
-        self.rms_norm_k = A2RMSNorm(config, self.hidden_size // self.num_attention_heads)
+        self.rms_norm_q = A2RMSNorm(config, self.hidden_size)
+        self.rms_norm_k = A2RMSNorm(config, self.hidden_size)
 
     def forward(self, hidden_states, rope_rotations):
         if self.hidden_size % self.num_attention_heads != 0:
@@ -94,12 +94,12 @@ class A2Attention(nn.Module):
         batch_size, seq_length, _ = hidden_states.size()
         head_dim = self.hidden_size // self.num_attention_heads
         q, k, v = self.qkv(hidden_states).chunk(3, dim=-1) 
+        q = self.rms_norm_q(q)
+        k = self.rms_norm_k(k)
         # batch, seq, num_heads, head_dim
         q = q.view(batch_size, seq_length, self.num_attention_heads, head_dim).transpose(1, 2) # batch, num_heads, seq, head_dim
         k = k.view(batch_size, seq_length, self.num_attention_heads, head_dim).transpose(1, 2) # batch, num_heads, seq, head_dim
         v = v.view(batch_size, seq_length, self.num_attention_heads, head_dim).transpose(1, 2) # batch, num_heads, seq, head_dim
-        q = self.rms_norm_q(q)
-        k = self.rms_norm_k(k)
         q, k = apply_rotary_pos_emb(q, k, rope_rotations)
         attn_scores = torch.matmul(q, k.transpose(-2, -1)) / (head_dim ** 0.5) # batch, num_heads, seq, seq
         attn_scores = attn_scores.masked_fill(
@@ -142,6 +142,7 @@ class A2Transformer(PreTrainedModel):
         # TODO: Set up the other components here.
         self.num_layer = config.num_hidden_layers
         self.embedding = nn.Embedding(config.vocab_size, config.hidden_size)
+        self.rms_norm_final = A2RMSNorm(config, config.hidden_size)
         self.unembedding = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         # TODO: put all transformer decoder layers in a ModuleList.
         self.layers = nn.ModuleList([A2DecoderLayer(config) for _ in range(self.num_layer)])
@@ -154,6 +155,7 @@ class A2Transformer(PreTrainedModel):
         embedding = self.embedding(input_ids)
         for i in range(self.num_layer):
             embedding = self.layers[i](embedding, rope_rotations)   
+        embedding = self.rms_norm_final(embedding)
         unembedding = self.unembedding(embedding)
         # TODO: Call embedding, transformer decoder layers, last normalizer, and unembedding.
         # TODO: Compute the loss as in Assignment 1 if labels is not None.
@@ -447,23 +449,23 @@ if __name__ == '__main__':
     os.chdir(os.path.dirname(__file__))
     tokenizer = A1Tokenizer.from_file('tokenizer.pkl')
     config = A2ModelConfig(
-        vocab_size=len(tokenizer.str_to_id),
-        hidden_size=128,
-        intermediate_size=512,
-        num_attention_heads=4,
-        num_hidden_layers=4,
-        rope_theta=100000.0,
+        vocab_size=100352,
+        hidden_size=2048,
+        intermediate_size=8192,
+        num_attention_heads=16,
+        num_hidden_layers=16,
+        rope_theta=500000.0,
         rms_norm_eps=torch.finfo(torch.float32).eps
     )
     dataset = load_dataset('text', data_files={'train': '/Users/code/note/wasp_course/assignment/a1_1/train.txt', 'val': '/Users/code/note/wasp_course/assignment/a1_1/val.txt'})
     dataset = dataset.filter(lambda x: x['text'].strip() != '') # filter out empty lines
-    for sec in ['train', 'val']:
-        dataset[sec] = Subset(dataset[sec], range(100))
-    test_sentence = ["She lives in San"]
-    test_tensor = torch.tensor(tokenizer(test_sentence, return_tensors='pt')['input_ids'])
     
     model = A2Transformer(config)
-    model = model.from_pretrained('/Users/wangzi/Downloads/trainer_output/llm_trainer_output')
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total params: {total_params} ") 
+    for name, param in model.named_parameters():
+        print(name, param.shape)
+    # model = model.from_pretrained('/Users/wangzi/Downloads/trainer_output/llm_trainer_output')
 
     # trainer = A1Trainer(
     #     model=model,
@@ -493,28 +495,23 @@ if __name__ == '__main__':
     # print(topk_sampling(model, ["Write a Python program that reverses a list."], max_len=50, topk=3, tokenizer=tokenizer, temperature=2.0))
     # print(topk_sampling(model, ["In natural language processing, a Transformer"], max_len=50, topk=10, tokenizer=tokenizer, temperature=2.0))
 
-    from transformers import AutoTokenizer, AutoModelForCausalLM
-    model_name = 'allenai/OLMo-2-0425-1B'
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(model_name)
-    print(model)
-    print(model.config)
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total params: {total_params} ") 
-
-    for name, param in model.named_parameters():
-        print(name, param.shape)
-
-    """
-    Test output
-    """
-    print(topk_sampling(model, ["In natural language processing, a Transformer"], max_len=50, topk=10, tokenizer=tokenizer, temperature=2.0))
-    # Ans: 
-    # <BOS> in natural language processing , a <UNK> system is defined in which <UNK> or a particular system that is defined system is often used at the process that may <UNK> or context , when the system with <UNK> of a given process , an external or complex or an
+    # from transformers import AutoTokenizer, AutoModelForCausalLM
+    # model_name = 'allenai/OLMo-2-0425-1B'
+    # tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # model = AutoModelForCausalLM.from_pretrained(model_name)
+    # print(model)
+    # print(model.config)
     
-    print(topk_sampling(model, ["Is Stockholm the capital of Sweden? Answer yes or no. The answer is"], max_len=50, topk=10, tokenizer=tokenizer, temperature=2.0))
-    # Ans:
-    #  <BOS> is stockholm the capital of sweden ? answer yes or no . the answer is not just it , it , in the value is no more . it a thing of the <UNK> , the problem of <UNK> is , in any other answer to our point on
-    print(topk_sampling(model, ["Write a Python program that reverses a list."], max_len=50, topk=10, tokenizer=tokenizer, temperature=2.0))
+
+    # """
+    # Test output
+    # """
+    # print(topk_sampling(model, ["In natural language processing, a Transformer"], max_len=50, topk=10, tokenizer=tokenizer, temperature=2.0))
+    # # <BOS> in natural language processing , a <UNK> system is defined in which <UNK> or a particular system that is defined system is often used at the process that may <UNK> or context , when the system with <UNK> of a given process , an external or complex or an
+    
+    # print(topk_sampling(model, ["Is Stockholm the capital of Sweden? Answer yes or no. The answer is"], max_len=50, topk=10, tokenizer=tokenizer, temperature=2.0))
+    # # Ans:
+    # #  <BOS> is stockholm the capital of sweden ? answer yes or no . the answer is not just it , it , in the value is no more . it a thing of the <UNK> , the problem of <UNK> is , in any other answer to our point on
+    # print(topk_sampling(model, ["Write a Python program that reverses a list."], max_len=50, topk=10, tokenizer=tokenizer, temperature=2.0))
     # Ans: 
     # <BOS> write a <UNK> program that <UNK> a list . in this <UNK> program of the program <UNK> , one is <UNK> program of all the <UNK> can <UNK> of a compiler , but <UNK> , <UNK> can be <UNK> and the <UNK> and a compilation of these compiler to
