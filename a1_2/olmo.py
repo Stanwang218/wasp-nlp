@@ -27,7 +27,6 @@ def topk_sampling(model, prompt, max_len, topk, tokenizer, temperature=1.0, devi
     text = tokenizer.decode([idx.item() for idx in generated[0]])
     return text
 
-login("xxx")
 
 
 model_name = "allenai/OLMo-2-0425-1B"
