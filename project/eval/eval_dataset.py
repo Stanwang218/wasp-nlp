@@ -13,6 +13,7 @@ from sklearn.base import BaseEstimator
 from sklearn.metrics import accuracy_score, roc_auc_score
 from typing import Union
 import pandas as pd
+import json
 
 def check_file_exists(path):
     """Checks if a pickle file exists. Returns None if not, else returns the unpickled file."""
@@ -324,6 +325,14 @@ def eval_on_datasets(
             elif perturbation_method == 'header_mask':
                 masked_text = kwargs.get('masked_text', 'feature')
                 X.columns = [f'{masked_text}_{i}' for i in range(X.shape[1])]
+            elif perturbation_method == 'column_extend': 
+                json_dict = json.load(open(os.path.join(os.path.dirname(__file__), '..', 'rewrite_column', 'extended_meanings.json'), 'r'))
+                if ds_name in json_dict:
+                    column_meaning_dict = json_dict[ds_name]
+                    new_column_names = [f"{col} ({column_meaning_dict.get(col, 'No extended meaning')})" for col in X.columns]
+                    print(new_column_names)
+                    X.columns = new_column_names
+                
             
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=_seed, stratify=y)
             
