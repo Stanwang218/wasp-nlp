@@ -316,6 +316,7 @@ def eval_on_datasets(
             #     break
             tqdm_bar.set_description(f"evaluating on {device} {ds_name}")
             X, y = datasets_dict[ds_name]
+            X = X.copy()
             if perturbation_method == 'header_remove':
                 X = X.values
                 y = y.values
