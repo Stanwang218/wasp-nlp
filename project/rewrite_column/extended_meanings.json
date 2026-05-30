@@ -1,0 +1,123 @@
+{
+    "us_accidents_severity": {
+        "Street": "Name or number of the road or highway where the incident occurred",
+        "Side": "Side of the road (e.g., Right, Left) indicating the direction or lane",
+        "City": "City where the incident took place",
+        "County": "County administrative division of the incident location",
+        "Zipcode": "Postal code (ZIP code) of the incident area",
+        "Sunrise_Sunset": "Lighting condition indicating whether it was day or night at the time of the incident",
+        "State": "U.S. state where the incident occurred",
+        "Nearby_Point_of_Interest": "Type of nearby feature or landmark such as a junction, crossing, or traffic signal",
+        "Year": "Calendar year in which the incident happened",
+        "Location": "Full text description combining street, city, county, and state for geolocation reference"
+    },
+    "yelp": {
+        "name": "Business name of the establishment.",
+        "address": "Street address of the business location.",
+        "city": "City where the business is located.",
+        "state": "Two-letter state abbreviation of the business.",
+        "postal_code": "ZIP code of the business address.",
+        "latitude": "Geographic latitude coordinate of the business.",
+        "longitude": "Geographic longitude coordinate of the business.",
+        "review_count": "Number of reviews received by the business (float).",
+        "is_open": "Whether the business is currently open (string: 'open' or 'closed').",
+        "categories": "Comma-separated list of business categories (e.g., type of cuisine or services).",
+        "price_range": "Price level rating (1=cheap, 2=moderate, 3=expensive, 4=very expensive; NaN if unknown).",
+        "number_of_days_open": "Number of days per week the business is open (float, e.g., 7.0 for every day)."
+    },
+    "spotify": {
+        "track": "Name of the song.",
+        "artist": "Name of the artist or band.",
+        "danceability": "Measure (0 to 1) of how suitable a track is for dancing based on tempo, rhythm stability, beat strength, and overall regularity.",
+        "energy": "Perceptual measure (0 to 1) of intensity and activity, including dynamic range, perceived loudness, timbre, onset rate, and general entropy.",
+        "key": "Estimated overall key of the track (integer 0 to 11 mapped to pitch classes, e.g., 0=C, 1=C\u266f/D\u266d, etc., with -1 indicating no key detected).",
+        "loudness": "Overall loudness of the track in decibels (dB), averaged across the entire track.",
+        "mode": "Modality of the track (Major or Minor), indicating the type of scale from which its melodic content is derived.",
+        "speechiness": "Measure (0 to 1) of the presence of spoken words; values above 0.66 suggest entirely spoken word, 0.33\u20130.66 suggest a mix, and below ~0.33 indicate music or non-speech content.",
+        "acousticness": "Confidence measure (0 to 1) that the track is acoustic (non-electronic), based on timbral and spectral features.",
+        "instrumentalness": "Predicts whether a track has no vocal content (0 to 1); values close to 1 indicate instrumental tracks.",
+        "liveness": "Measure (0 to 1) of the presence of audience in the recording; higher values indicate a higher probability that the track was performed live.",
+        "valence": "Measure (0 to 1) describing the musical positiveness conveyed by a track (e.g., happy, cheerful, euphoric vs. sad, depressed, angry).",
+        "tempo": "Overall estimated tempo of a track in beats per minute (BPM).",
+        "duration_ms": "Duration of the track in milliseconds.",
+        "time_signature": "Estimated overall time signature (beats per bar, e.g., 3/4, 4/4), typically an integer from 1 to 7.",
+        "chorus_hit": "Timestamp (in seconds) of the most prominent or defining chorus hit within the track.",
+        "sections": "Number of distinct structural sections (e.g., verse, chorus, bridge) identified in the track.",
+        "decade": "The decade of release (e.g., 60s, 70s, 80s) derived from the track's release year.",
+        "popularity": "Target variable representing the popularity score or rank of the track (higher values indicate greater popularity)."
+    },
+    "zomato": {
+        "name": "Restaurant name",
+        "city": "City or locality where the restaurant is located",
+        "rating_count": "Number of customer ratings (e.g., \"20+ ratings\" indicates at least 20 ratings)",
+        "cost": "Estimated cost for two people (in Indian Rupees)",
+        "cuisine": "Types of cuisine offered by the restaurant (comma-separated)",
+        "lic_no": "License number (likely FSSAI food license)",
+        "link": "URL to the restaurant's page on Swiggy",
+        "address": "Full street address of the restaurant including area and state",
+        "target 'rating'": "Average customer rating (typically on a scale of 1 to 5)"
+    },
+    "nba_draft": {
+        "year": "The draft year in which the player was selected.",
+        "overall_pick": "The overall selection number (1 to 60) of the player in that year's NBA draft.=",
+        "team": "The NBA team that drafted the player, represented by its three-letter abbreviation.",
+        "player": "The full name of the drafted player.",
+        "college": "The college or university the player attended prior to the draft; may be NaN if the player did not attend a U.S. college (e.g., international prospects).",
+        "years_active": "The number of seasons the player was active in the NBA.",
+        "value_over_replacement": "A cumulative statistic estimating the total number of wins the player contributed over a replacement-level player throughout their career."
+    },
+    "roger_ebert": {
+        "movie_name": "The title of the movie, a unique identifier string.",
+        "year": "The release year of the movie, an integer representing the time period.",
+        "directors": "The name(s) of the director(s) responsible for the movie, a comma-separated string.",
+        "actors": "The name(s) of the main cast members, a comma-separated string (may be missing).",
+        "genre": "The genre classification(s) of the movie, a comma-separated string (e.g., Documentary, Romance).",
+        "pg_rating": "The MPAA or equivalent content rating (e.g., R, PG-13), a string (may be missing).",
+        "duration": "The runtime of the movie in minutes, a float."
+    },
+    "ramen_ratings": {
+        "Brand": "The manufacturer or company name of the instant noodle product.",
+        "Variety": "The specific flavor or product name of the instant noodle.",
+        "Style": "The type of packaging (e.g., Cup, Box, Pack) for the product.",
+        "Country": "The country of origin or where the product is sold/made.",
+        "Stars": "The rating or score given to the product (target variable)."
+    },
+    "chocolate_bar_ratings": {
+        "Company_(Manufacturer)": "Name of the chocolate manufacturer or brand.",
+        "Company_Location": "Country or region where the manufacturer is based.",
+        "Review_Date": "Year when the chocolate was reviewed.",
+        "Country_of_Bean_Origin": "Country where the cocoa beans were grown.",
+        "Specific_Bean_Origin_or_Bar_Name": "Specific geographical origin of the beans or name of the chocolate bar.",
+        "Cocoa_Percent": "Percentage of cocoa content in the chocolate product.",
+        "Ingredients": "List of ingredients used, often encoded with abbreviations (e.g., B for beans, S for sugar, C for cocoa butter).",
+        "Most_Memorable_Characteristics": "Descriptive flavor notes or sensory characteristics of the chocolate.",
+        "Rating": "Numerical score assigned to the chocolate based on its quality (target variable)."
+    },
+    "whisky": {
+        "Whisky": "Name of the whisky including brand, expression, and age statement or special edition.",
+        "Cost": "Price range of the whisky in Canadian dollars (ranges from low to high).",
+        "Class": "Broad stylistic category indicating resemblance to rye or single malt whiskies.",
+        "Cluster": "Flavor profile description detailing body, sweetness, smokiness, and other tasting notes; may be missing (NaN).",
+        "Country": "Country of origin where the whisky is produced.",
+        "Type": "Type of whisky indicating whether it is a blend or a single malt."
+    },
+    "coffee_ratings": {
+        "roaster": "The coffee roasting company or brand that produced the coffee.",
+        "name": "The specific product name or designation of the coffee, often including origin, variety, or processing method.",
+        "location": "The city and state where the roastery is based.",
+        "origin": "The geographic region, district, or country where the coffee beans were grown, sometimes including specific growing areas or cooperatives.",
+        "roast": "The roast degree or style applied to the coffee, indicating the level of roasting (e.g., Medium-Light).",
+        "desc_1": "A detailed sensory description of the coffee's aroma, flavor notes, acidity, mouthfeel, and finish, typically written by a professional taster.",
+        "desc_2": "Background information on the coffee's production, including variety, processing method, farmer or cooperative details, and sometimes additional context about the roaster.",
+        "desc_3": "A concise summary or overall impression of the coffee, highlighting its key characteristics and appeal."
+    },
+    "michelin": {
+        "Name": "Name of the restaurant, which may indicate brand reputation or chef association relevant to award likelihood.",
+        "Address": "Full postal address of the restaurant, providing precise geographic location for context of prestige or regional awards.",
+        "Location": "City and country of the restaurant, useful for identifying regional award patterns or culinary scenes.",
+        "Cuisine": "Type or style of cuisine offered, often a key factor in award categories (e.g., traditional, creative, Chinese).",
+        "Longitude": "Geographic coordinate for mapping restaurant location, potentially linked to award concentration in specific areas.",
+        "Latitude": "Geographic coordinate complementing longitude for precise location analysis in award prediction.",
+        "Website_Url": "Official website URL of the restaurant, presence or quality of which may correlate with award recognition or online reputation."
+    }
+}
