@@ -14,6 +14,7 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 from typing import Union
 import pandas as pd
 import json
+from tabstar.tabstar_model import TabSTARClassifier
 
 def check_file_exists(path):
     """Checks if a pickle file exists. Returns None if not, else returns the unpickled file."""
@@ -308,43 +309,50 @@ def eval_on_datasets(
     dataset_names = list(datasets_dict.keys())
 
     # print(f"evaluating {model_name} on {device}")
-    if "cuda" in device:
-        results = []
-        tqdm_bar = tqdm(list(itertools.product(dataset_names, seed)))
-        for _, (ds_name, _seed ) in enumerate(tqdm_bar):
-            # if _ > 4:
-            #     break
-            tqdm_bar.set_description(f"evaluating on {device} {ds_name}")
-            X, y = datasets_dict[ds_name]
-            X = X.copy()
-            if perturbation_method == 'header_remove':
-                X = X.values
-                y = y.values
-            elif perturbation_method == 'header_permutation':
-                rng = np.random.default_rng(seed=_seed)
-                X.columns = np.random.permutation(X.columns)
-            elif perturbation_method == 'header_mask':
-                masked_text = kwargs.get('masked_text', 'feature')
-                X.columns = [f'{masked_text}_{i}' for i in range(X.shape[1])]
-            elif perturbation_method == 'column_extend': 
-                json_dict = json.load(open(os.path.join(os.path.dirname(__file__), '..', 'rewrite_column', 'extended_meanings.json'), 'r'))
-                if ds_name in json_dict:
-                    column_meaning_dict = json_dict[ds_name]
-                    new_column_names = [f"{col} ({column_meaning_dict.get(col, 'No extended meaning')})" for col in X.columns]
-                    print(new_column_names)
-                    X.columns = new_column_names
-                
+    results = []
+    tqdm_bar = tqdm(list(itertools.product(dataset_names, seed)))
+    for _, (ds_name, _seed ) in enumerate(tqdm_bar):
+        # if _ > 4:
+        #     break
+        tqdm_bar.set_description(f"evaluating on {device} {ds_name}")
+        X, y = datasets_dict[ds_name]
+        X = X.copy()
+        if perturbation_method == 'header_remove':
+            X = X.values
+            y = y.values
+        elif perturbation_method == 'header_permutation':
+            rng = np.random.default_rng(seed=_seed)
+            X.columns = np.random.permutation(X.columns)
+        elif perturbation_method == 'header_mask':
+            masked_text = kwargs.get('masked_text', 'feature')
+            X.columns = [f'{masked_text}_{i}' for i in range(X.shape[1])]
+        elif perturbation_method == 'column_extend': 
+            json_dict = json.load(open(os.path.join(os.path.dirname(__file__), '..', 'rewrite_column', 'extended_meanings.json'), 'r'))
+            if ds_name in json_dict:
+                column_meaning_dict = json_dict[ds_name]
+                new_column_names = [f"{col} ({column_meaning_dict.get(col, 'No extended meaning')})" for col in X.columns]
+                print(new_column_names)
+                X.columns = new_column_names
             
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=_seed, stratify=y)
-            
-            # if perturbation_method is None:
-            model.fit(X_train, y_train)
+        
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=_seed, stratify=y)
+        
+        # if perturbation_method is None:
+    
 
+        if isinstance(model, TabSTARClassifier):
+            from copy import deepcopy
+            _model = deepcopy(model)
+            _model.fit(X_train, y_train)
+            y_pred = _model.predict(X_test)
+            auc_score = accuracy_score(y_test, y_pred)
+        else:
+            model.fit(X_train, y_train)
             prediction_probabilities = model.predict_proba(X_test)
-            
             auc_score = auc_metric(y_test, prediction_probabilities, multi_class='ovo').item()
-            result = {'dataset_name': ds_name, 'seed': _seed, 'AUC': auc_score}
-            results.append(result)
+
+        result = {'dataset_name': ds_name, 'seed': _seed, 'AUC': auc_score}
+        results.append(result)
     
     final_results = {}
     for result in results:
