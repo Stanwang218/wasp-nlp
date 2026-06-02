@@ -27,7 +27,8 @@ perturbation_methods = [
     # 'header_remove',
     # None
     # 'header_permutation',
-    'header_mask',
+    # 'header_mask',
+    'column_extend',
 ]
 
 kwargs = {

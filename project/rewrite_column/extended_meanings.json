@@ -59,7 +59,7 @@
     },
     "nba_draft": {
         "year": "The draft year in which the player was selected.",
-        "overall_pick": "The overall selection number (1 to 60) of the player in that year's NBA draft.=",
+        "overall_pick": "The overall selection number (1 to 60) of the player in that year's NBA draft.",
         "team": "The NBA team that drafted the player, represented by its three-letter abbreviation.",
         "player": "The full name of the drafted player.",
         "college": "The college or university the player attended prior to the draft; may be NaN if the player did not attend a U.S. college (e.g., international prospects).",

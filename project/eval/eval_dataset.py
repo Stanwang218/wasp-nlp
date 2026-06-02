@@ -339,6 +339,9 @@ def eval_on_datasets(
         
         # if perturbation_method is None:
     
+        # Let models know which dataset they're working on (needed by TabLLM, etc.)
+        if hasattr(model, 'dataset_name_'):
+            model.dataset_name_ = ds_name
 
         if isinstance(model, TabSTARClassifier):
             from copy import deepcopy
