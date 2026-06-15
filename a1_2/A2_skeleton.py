@@ -54,6 +54,7 @@ class A2MLP(nn.Module):
     def forward(self, hidden_states):
         hidden_states_left, hidden_states_right = self.fc1(hidden_states).chunk(2, dim=-1)
         hidden_states = hidden_states_left * torch.nn.functional.silu(hidden_states_right)
+        # silu : x * sigmoid(x)
         hidden_states = self.fc2(hidden_states)
         return hidden_states
 
@@ -70,7 +71,7 @@ class A2RMSNorm(nn.Module):
 
     def forward(self, hidden_states):
         # batch, seq, embed
-        rms = torch.rsqrt(hidden_states.pow(2).mean(-1, keepdim=True) + self.rms_norm_eps)
+        rms = torch.rsqrt(hidden_states.pow(2).mean(-1, keepdim=True) + self.rms_norm_eps) # reciprocal of root mean square
         return hidden_states * rms * self.gamma
 
 
@@ -93,7 +94,7 @@ class A2Attention(nn.Module):
             raise ValueError(f"hidden_size ({self.hidden_size}) must be divisible by num_attention_heads ({self.num_attention_heads})")
         batch_size, seq_length, _ = hidden_states.size()
         head_dim = self.hidden_size // self.num_attention_heads
-        q, k, v = self.qkv(hidden_states).chunk(3, dim=-1) 
+        q, k, v = self.qkv(hidden_states).chunk(3, dim=-1) # batch, seq, hidden
         # batch, seq, num_heads, head_dim
         q = q.view(batch_size, seq_length, self.num_attention_heads, head_dim).transpose(1, 2) # batch, num_heads, seq, head_dim
         k = k.view(batch_size, seq_length, self.num_attention_heads, head_dim).transpose(1, 2) # batch, num_heads, seq, head_dim
